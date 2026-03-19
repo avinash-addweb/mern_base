@@ -1,0 +1,71 @@
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "54320:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: base_mern
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: dev
+    ports:
+      - "4100:4100"
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./packages:/app/packages
+    environment:
+      NODE_ENV: development
+      PORT: 4100
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/base_mern?schema=public
+      MONGODB_URI: mongodb://mongodb:27017/base_mern
+      JWT_SECRET: docker-dev-secret-change-in-production
+      JWT_EXPIRES_IN: 7d
+    depends_on:
+      - mongodb
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4100/api/v1
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      target: dev
+    ports:
+      - "4300:4300"
+    volumes:
+      - ./apps/admin/src:/app/apps/admin/src
+    environment:
+      VITE_API_URL: http://localhost:4100/api/v1
+    depends_on:
+      - api
+
+volumes:
+  mongodb_data:
+  postgres_data:

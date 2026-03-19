@@ -1,0 +1,16 @@
+{
+  "name": "@base-mern/config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint": "./eslint.config.js",
+    "./prettier": "./prettier.config.js",
+    "./jest": "./jest.config.js"
+  },
+  "dependencies": {
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "typescript-eslint": "^8.27.0"
+  }
+}
