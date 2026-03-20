@@ -9,7 +9,7 @@ A production-ready monorepo with **Express API**, **Next.js frontend**, and **Re
 | API            | Express 5, Prisma (PostgreSQL/MySQL), Mongoose (MongoDB), JWT Auth, Swagger |
 | Frontend       | Next.js 15 (App Router, SSR), Tailwind CSS v4, shadcn/ui                    |
 | Admin          | React 19, Vite 6, React Router 7, Tailwind CSS v4, shadcn/ui                |
-| Shared         | TypeScript, npm workspaces, ESLint 9, Prettier, Husky, lint-staged          |
+| Shared         | TypeScript, npm workspaces, ESLint 9, Prettier                              |
 | Infrastructure | Docker, docker-compose, Redis, Elasticsearch, Seq                           |
 | CI/CD          | GitHub Actions (lint, type-check, test, build)                              |
 
@@ -518,17 +518,13 @@ docker compose down      # Stop all
 
 ## Code Quality
 
-### Pre-commit Hook
-
-Husky runs **lint-staged** on every commit:
-
-- ESLint with `--fix` on `.ts` and `.tsx` files
-- Prettier on `.ts`, `.tsx`, `.js`, `.json`, `.css`, and `.md` files
-
-### Type Checking
+Run all quality gates before committing:
 
 ```bash
+npm run check         # format:check + lint + type-check
 npm run type-check    # tsc --noEmit across all apps
+npm run lint          # ESLint all
+npm run format:check  # Prettier check
 ```
 
 ## Adding a New Module to the API

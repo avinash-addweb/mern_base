@@ -35,6 +35,7 @@ npm run lint             # ESLint all
 npm run type-check       # TypeScript check all
 npm run format           # Prettier write
 npm run format:check     # Prettier check
+npm run check            # Run format:check + lint + type-check
 
 # Tests
 npm run test             # All tests
