@@ -14,6 +14,7 @@ base_mern/
 │   ├── types/        # @base-mern/types — shared Zod schemas, TS interfaces, enums
 │   ├── utils/        # @base-mern/utils — createApiClient, formatDate, formatCurrency, slugify
 │   └── config/       # @base-mern/config — shared ESLint, Prettier, Jest configs
+├── docs/              # Design schemas & architecture docs
 ├── .github/workflows/ # CI/CD pipelines (ci.yml, deploy.yml)
 ├── docker-compose.yml
 ├── tsconfig.base.json
@@ -1042,6 +1043,27 @@ export function createApiClient(config: {
 - `packages/config/` — ESLint, Prettier, Jest configs
 - `tsconfig.base.json` — Base TS config (ES2024, NodeNext, strict)
 - `docker-compose.yml` — All infrastructure services
+
+---
+
+## Design Docs (`docs/`)
+
+The `docs/` directory contains design schemas and architecture documents that define the target data model and system design for the project being built on this skeleton.
+
+### Current Docs
+
+| File | Description |
+|------|-------------|
+| `docs/DATABASE_DESIGN.md` | Full database design for the College Discovery & Admission Guidance Platform — PostgreSQL tables, MongoDB collections, Redis keys, and Elasticsearch indexes |
+
+### How to Use Design Docs
+
+- **Before implementing a new module**, read the relevant section in `DATABASE_DESIGN.md` to understand the expected schema, relationships, indexes, and data boundary rules (which DB each entity belongs to).
+- **Prisma models** should match the PostgreSQL table definitions (columns, types, constraints, indexes).
+- **Mongoose models** should match the MongoDB collection definitions.
+- **Redis key patterns** should follow the naming conventions defined in the design doc.
+- **Elasticsearch index mappings** should match the search index definitions.
+- Design docs are the **source of truth** for data modeling decisions — if the code diverges from the design doc, flag it to the user.
 
 ---
 
