@@ -1,133 +1,64 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import type { PaginatedResponse, IUser } from "@base-mern/types";
 import { UserRole } from "@base-mern/types";
-import type { IUser } from "@base-mern/types";
-import { formatDate } from "@base-mern/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { apiFetch } from "@/lib/api";
+import { UserTable } from "@/components/users/UserTable";
+import { Pagination } from "@/components/ui/Pagination";
 
-const mockUsers: IUser[] = [
-  {
-    id: "1",
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    role: UserRole.ADMIN,
-    createdAt: new Date("2025-01-15"),
-    updatedAt: new Date("2025-06-01"),
-  },
-  {
-    id: "2",
-    name: "Bob Smith",
-    email: "bob@example.com",
-    role: UserRole.USER,
-    createdAt: new Date("2025-03-20"),
-    updatedAt: new Date("2025-07-10"),
-  },
-  {
-    id: "3",
-    name: "Carol Williams",
-    email: "carol@example.com",
-    role: UserRole.USER,
-    createdAt: new Date("2025-05-08"),
-    updatedAt: new Date("2025-08-15"),
-  },
-  {
-    id: "4",
-    name: "David Brown",
-    email: "david@example.com",
-    role: UserRole.ADMIN,
-    createdAt: new Date("2025-06-12"),
-    updatedAt: new Date("2025-09-01"),
-  },
-  {
-    id: "5",
-    name: "Eve Davis",
-    email: "eve@example.com",
-    role: UserRole.USER,
-    createdAt: new Date("2025-08-25"),
-    updatedAt: new Date("2025-10-20"),
-  },
-];
-
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 export default function Users() {
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(mockUsers.length / PAGE_SIZE);
-  const paginatedUsers = mockUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { data, loading, error, refetch } = useApiQuery<PaginatedResponse<IUser>>(
+    `/users?page=${page}&limit=${PAGE_SIZE}`,
+  );
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("Are you sure you want to delete this user?")) return;
+      try {
+        await apiFetch(`/users/${id}`, { method: "DELETE" });
+        refetch();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Delete failed");
+      }
+    },
+    [refetch],
+  );
+
+  const handleRoleChange = useCallback(
+    async (id: string, currentRole: string) => {
+      const newRole = currentRole === UserRole.ADMIN ? "USER" : "ADMIN";
+      if (!confirm(`Change role to ${newRole}?`)) return;
+      try {
+        await apiFetch(`/users/${id}/role`, {
+          method: "PATCH",
+          body: JSON.stringify({ role: newRole }),
+        });
+        refetch();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Role change failed");
+      }
+    },
+    [refetch],
+  );
+
+  const users = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   return (
     <div>
       <h1 className="mb-6 text-3xl font-bold">User Management</h1>
-
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      user.role === UserRole.ADMIN
-                        ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                        : "bg-[var(--secondary)] text-[var(--secondary-foreground)]",
-                    )}
-                  >
-                    {user.role}
-                  </span>
-                </TableCell>
-                <TableCell>{formatDate(user.createdAt)}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">
-                    Edit
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Previous
-        </Button>
-        <span className="text-sm text-[var(--muted-foreground)]">
-          Page {page} of {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Next
-        </Button>
-      </div>
+      {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          <UserTable users={users} onDelete={handleDelete} onRoleChange={handleRoleChange} />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
+      )}
     </div>
   );
 }

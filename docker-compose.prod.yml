@@ -22,6 +22,39 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    ports:
+      - "9201:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - "8081:80"
+      - "5341:5341"
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - seq_data:/data
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -36,9 +69,16 @@ services:
       MONGODB_URI: mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/base_mern?authSource=admin
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      SEQ_URL: http://seq:5341
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      ELASTICSEARCH_URL: http://elastic:${ELASTIC_PASSWORD:-changeme}@elasticsearch:9200
     depends_on:
       - mongodb
       - postgres
+      - seq
+      - redis
+      - elasticsearch
     restart: unless-stopped
 
   web:
@@ -68,3 +108,6 @@ services:
 volumes:
   mongodb_data:
   postgres_data:
+  seq_data:
+  redis_data:
+  elasticsearch_data:

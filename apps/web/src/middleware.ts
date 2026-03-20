@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const guestPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
   const { pathname } = request.nextUrl;
 
-  // If on login/register with token, redirect to dashboard
-  if (token && (pathname === "/login" || pathname === "/register")) {
+  // If on guest paths with token, redirect to dashboard
+  if (token && guestPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -18,5 +20,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/profile/:path*", "/login", "/register"],
+  matcher: [
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+  ],
 };

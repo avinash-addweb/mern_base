@@ -13,6 +13,7 @@
   "dependencies": {
     "@base-mern/types": "*",
     "@base-mern/utils": "*",
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-slot": "^1.2.4",
     "@tailwindcss/postcss": "^4.2.2",
     "class-variance-authority": "^0.7.1",
@@ -21,6 +22,7 @@
     "next": "^15.3.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-hook-form": "^7.71.2",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.1.3"
   },

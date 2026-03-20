@@ -1,11 +1,19 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Settings, PanelLeftClose, PanelLeft } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  PanelLeftClose,
+  PanelLeft,
+  ScrollText,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/" },
   { label: "Users", icon: Users, to: "/users" },
+  { label: "Audit Logs", icon: ScrollText, to: "/audit-logs" },
   { label: "Settings", icon: Settings, to: "/settings" },
 ];
 

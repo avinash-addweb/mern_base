@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  role          Role      @default(USER)
+  resetToken    String?   @map("reset_token")
+  resetTokenExp DateTime? @map("reset_token_exp")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  uploads       Upload[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Upload {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String   @map("original_name")
+  mimetype     String
+  size         Int
+  path         String
+  uploadedBy   String   @map("uploaded_by")
+  user         User     @relation(fields: [uploadedBy], references: [id])
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("uploads")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}

@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((res) => {
         if (res.data.user.role !== UserRole.ADMIN) {
           localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
           setToken(null);
           setUser(null);
         } else {
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         setToken(null);
         setUser(null);
       })
@@ -49,7 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiFetch<ApiResponse<{ user: IUser; token: string }>>("/auth/login", {
+    const res = await apiFetch<
+      ApiResponse<{ user: IUser; accessToken: string; refreshToken: string }>
+    >("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
@@ -58,13 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Access denied. Admin privileges required.");
     }
 
-    localStorage.setItem("token", res.data.token);
-    setToken(res.data.token);
+    localStorage.setItem("token", res.data.accessToken);
+    localStorage.setItem("refreshToken", res.data.refreshToken);
+    setToken(res.data.accessToken);
     setUser(res.data.user);
   }, []);
 
   const logout = useCallback(() => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      apiFetch("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {});
+    }
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     setToken(null);
     setUser(null);
   }, []);

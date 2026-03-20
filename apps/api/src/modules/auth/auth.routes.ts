@@ -1,6 +1,23 @@
 import { Router } from "express";
-import { register, login, getMe } from "./auth.controller.js";
+import {
+  register,
+  login,
+  getMe,
+  forgotPassword,
+  resetPassword,
+  refreshToken,
+  logout,
+} from "./auth.controller.js";
 import { authMiddleware } from "../../middlewares/auth.js";
+import { validate } from "../../middlewares/validate.js";
+import { authLimiter } from "../../middlewares/rateLimiter.js";
+import {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  refreshTokenSchema,
+} from "./auth.schemas.js";
 
 const router = Router();
 
@@ -36,7 +53,7 @@ const router = Router();
  *       409:
  *         description: Email already registered
  */
-router.post("/register", register);
+router.post("/register", authLimiter, validate(registerSchema), register);
 
 /**
  * @swagger
@@ -67,7 +84,7 @@ router.post("/register", register);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", login);
+router.post("/login", authLimiter, validate(loginSchema), login);
 
 /**
  * @swagger
@@ -80,21 +97,105 @@ router.post("/login", login);
  *     responses:
  *       200:
  *         description: Current user data
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
  *       401:
  *         description: Not authenticated
  */
 router.get("/me", authMiddleware, getMe);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Reset email sent (always returns 200)
+ */
+router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), forgotPassword);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post("/reset-password", authLimiter, validate(resetPasswordSchema), resetPassword);
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [refreshToken]
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: New token pair
+ *       401:
+ *         description: Invalid refresh token
+ */
+router.post("/refresh", validate(refreshTokenSchema), refreshToken);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout (revoke refresh token)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [refreshToken]
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Logged out
+ */
+router.post("/logout", validate(refreshTokenSchema), logout);
 
 export default router;

@@ -1,18 +1,21 @@
-import { env, connectMongoDB } from "./config/index.js";
+import { env, connectMongoDB, connectRedis, connectElasticsearch } from "./config/index.js";
+import { logger } from "./config/logger.js";
+import { initializeEmailTransport } from "./services/email.service.js";
 import app from "./app.js";
 
 async function main() {
-  // Connect to MongoDB
   await connectMongoDB();
+  await connectRedis();
+  await connectElasticsearch();
+  await initializeEmailTransport();
 
-  // Start server
   app.listen(env.PORT, () => {
-    console.log(`API server running on http://localhost:${env.PORT}`);
-    console.log(`Swagger docs at http://localhost:${env.PORT}/api-docs`);
+    logger.info(`API server running on http://localhost:${env.PORT}`);
+    logger.info(`Swagger docs at http://localhost:${env.PORT}/api-docs`);
   });
 }
 
 main().catch((error) => {
-  console.error("Failed to start server:", error);
+  logger.fatal(error, "Failed to start server");
   process.exit(1);
 });

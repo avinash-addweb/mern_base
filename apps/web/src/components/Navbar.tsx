@@ -4,7 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import { NavLinks } from "./navbar/NavLinks";
+import { AuthButtons } from "./navbar/AuthButtons";
+import { MobileMenu } from "./navbar/MobileMenu";
 
 export function Navbar() {
   const { user, loading, logout } = useAuth();
@@ -17,56 +20,9 @@ export function Navbar() {
           <Link href="/" className="text-lg font-bold">
             Base MERN
           </Link>
-          <div className="hidden items-center gap-4 md:flex">
-            <Link
-              href="/"
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            >
-              Home
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            >
-              Dashboard
-            </Link>
-          </div>
+          <NavLinks />
         </div>
-
-        {/* Desktop auth section */}
-        <div className="hidden items-center gap-2 md:flex">
-          {!loading && (
-            <>
-              {user ? (
-                <>
-                  <Link href="/profile">
-                    <Button variant="ghost" size="sm">
-                      <User className="mr-1 h-4 w-4" />
-                      {user.name}
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" size="sm" onClick={logout}>
-                    <LogOut className="mr-1 h-4 w-4" />
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <Button variant="ghost" size="sm">
-                      Login
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button size="sm">Register</Button>
-                  </Link>
-                </>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Mobile menu button */}
+        <AuthButtons user={user} loading={loading} logout={logout} />
         <Button
           variant="ghost"
           size="icon"
@@ -76,73 +32,13 @@ export function Navbar() {
           <Menu className="h-5 w-5" />
         </Button>
       </div>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="border-t border-[var(--border)] px-4 pb-4 pt-2 md:hidden">
-          <div className="flex flex-col gap-2">
-            <Link
-              href="/"
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              onClick={() => setMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              onClick={() => setMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            {!loading && (
-              <>
-                {user ? (
-                  <>
-                    <Link
-                      href="/profile"
-                      className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <span className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        {user.name}
-                      </span>
-                    </Link>
-                    <button
-                      className="flex items-center gap-1 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                      onClick={() => {
-                        logout();
-                        setMenuOpen(false);
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/register"
-                      className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Register
-                    </Link>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <MobileMenu
+        open={menuOpen}
+        user={user}
+        loading={loading}
+        logout={logout}
+        onClose={() => setMenuOpen(false)}
+      />
     </nav>
   );
 }

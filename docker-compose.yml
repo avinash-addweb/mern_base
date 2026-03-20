@@ -17,6 +17,44 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  mysql:
+    image: mysql:8
+    ports:
+      - "33060:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: base_mern
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    ports:
+      - "9201:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - "8081:80"
+      - "5341:5341"
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - seq_data:/data
+
   api:
     build:
       context: .
@@ -34,9 +72,15 @@ services:
       MONGODB_URI: mongodb://mongodb:27017/base_mern
       JWT_SECRET: docker-dev-secret-change-in-production
       JWT_EXPIRES_IN: 7d
+      SEQ_URL: http://seq:5341
+      REDIS_URL: redis://redis:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
     depends_on:
       - mongodb
       - postgres
+      - seq
+      - redis
+      - elasticsearch
 
   web:
     build:
@@ -69,3 +113,7 @@ services:
 volumes:
   mongodb_data:
   postgres_data:
+  mysql_data:
+  seq_data:
+  redis_data:
+  elasticsearch_data:

@@ -15,17 +15,17 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-function setTokenCookie(token: string) {
-  document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=604800`;
+function setTokenCookie(name: string, token: string) {
+  document.cookie = `${name}=${encodeURIComponent(token)}; path=/; max-age=604800`;
 }
 
-function removeTokenCookie() {
-  document.cookie = "auth_token=; path=/; max-age=0";
+function removeTokenCookie(name: string) {
+  document.cookie = `${name}=; path=/; max-age=0`;
 }
 
-function getTokenFromCookie(): string | null {
+function getTokenFromCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|; )auth_token=([^;]*)/);
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }
 
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = getTokenFromCookie();
+    const savedToken = getTokenFromCookie("auth_token");
     if (savedToken) {
       setToken(savedToken);
       apiFetch<ApiResponse<{ user: IUser }>>("/auth/me", {
@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(res.data.user);
         })
         .catch(() => {
-          removeTokenCookie();
+          removeTokenCookie("auth_token");
+          removeTokenCookie("refresh_token");
           setToken(null);
         })
         .finally(() => setLoading(false));
@@ -55,27 +56,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiFetch<ApiResponse<{ user: IUser; token: string }>>("/auth/login", {
+    const res = await apiFetch<
+      ApiResponse<{ user: IUser; accessToken: string; refreshToken: string }>
+    >("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    setTokenCookie(res.data.token);
-    setToken(res.data.token);
+    setTokenCookie("auth_token", res.data.accessToken);
+    setTokenCookie("refresh_token", res.data.refreshToken);
+    setToken(res.data.accessToken);
     setUser(res.data.user);
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    const res = await apiFetch<ApiResponse<{ user: IUser; token: string }>>("/auth/register", {
+    const res = await apiFetch<
+      ApiResponse<{ user: IUser; accessToken: string; refreshToken: string }>
+    >("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, name, password }),
     });
-    setTokenCookie(res.data.token);
-    setToken(res.data.token);
+    setTokenCookie("auth_token", res.data.accessToken);
+    setTokenCookie("refresh_token", res.data.refreshToken);
+    setToken(res.data.accessToken);
     setUser(res.data.user);
   }, []);
 
   const logout = useCallback(() => {
-    removeTokenCookie();
+    const refreshToken = getTokenFromCookie("refresh_token");
+    if (refreshToken) {
+      apiFetch("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {});
+    }
+    removeTokenCookie("auth_token");
+    removeTokenCookie("refresh_token");
     setToken(null);
     setUser(null);
   }, []);

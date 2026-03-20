@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../modules/auth/auth.utils.js";
-import { prisma } from "../config/prisma.js";
+import { authService } from "../modules/auth/auth.service.js";
 import { AppError } from "./errorHandler.js";
 
 export async function authMiddleware(
@@ -12,20 +12,12 @@ export async function authMiddleware(
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new AppError("No token provided", 401);
+      throw new AppError("No token provided", 401, "AUTH_NO_TOKEN");
     }
 
     const token = authHeader.split(" ")[1];
     const payload = verifyToken(token);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
-    });
-
-    if (!user) {
-      throw new AppError("User not found", 401);
-    }
+    const user = await authService.getUserById(payload.userId);
 
     req.user = user;
     next();
@@ -33,7 +25,7 @@ export async function authMiddleware(
     if (error instanceof AppError) {
       next(error);
     } else {
-      next(new AppError("Invalid token", 401));
+      next(new AppError("Invalid token", 401, "AUTH_INVALID_TOKEN"));
     }
   }
 }

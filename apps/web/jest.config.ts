@@ -7,13 +7,21 @@ const config: Config = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@base-mern/types$": "<rootDir>/../../packages/types/src/index.ts",
+    "^@base-mern/utils$": "<rootDir>/../../packages/utils/src/index.ts",
   },
+  transformIgnorePatterns: ["/node_modules/(?!(lucide-react)/)"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",
       {
-        tsconfig: "tsconfig.json",
-        jsx: "react-jsx",
+        tsconfig: {
+          jsx: "react-jsx",
+          module: "CommonJS",
+          moduleResolution: "node",
+          verbatimModuleSyntax: false,
+          esModuleInterop: true,
+        },
       },
     ],
   },

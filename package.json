@@ -23,6 +23,8 @@
     "db:generate": "npm run db:generate -w apps/api",
     "db:migrate": "npm run db:migrate -w apps/api",
     "db:studio": "npm run db:studio -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
+    "db:setup": "npm run db:setup -w apps/api",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -30,6 +32,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   }
 }

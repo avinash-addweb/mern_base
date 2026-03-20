@@ -1,17 +1,22 @@
 import { Users, Activity, Server, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useApiQuery } from "@/hooks/useApiQuery";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-const stats = [
-  { label: "Total Users", value: "128", icon: Users },
-  { label: "Active Sessions", value: "24", icon: Activity },
-  { label: "API Requests", value: "1,432", icon: Server },
-  { label: "System Uptime", value: "99.9%", icon: Clock },
-];
+import type { PaginatedResponse, IUser } from "@base-mern/types";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { data: usersData } = useApiQuery<PaginatedResponse<IUser>>("/users?page=1&limit=1");
+
+  const totalUsers = usersData?.pagination?.total ?? "—";
+
+  const stats = [
+    { label: "Total Users", value: String(totalUsers), icon: Users },
+    { label: "Active Sessions", value: "—", icon: Activity },
+    { label: "API Requests", value: "—", icon: Server },
+    { label: "System Uptime", value: "—", icon: Clock },
+  ];
 
   return (
     <div>

@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate --schema=apps/api/src/prisma/schema.prisma
+      - run: npm run build
+
+      # ──────────────────────────────────────────────────
+      # Add your deployment steps below.
+      #
+      # Examples:
+      #
+      # Docker build + push:
+      #   - run: docker build -t myapp-api -f apps/api/Dockerfile .
+      #   - run: docker push registry.example.com/myapp-api:${{ github.sha }}
+      #
+      # Vercel (web):
+      #   - uses: amondnet/vercel-action@v25
+      #     with:
+      #       vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #       vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #       vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #       vercel-args: ${{ github.event.inputs.environment == 'production' && '--prod' || '' }}
+      #
+      # Railway:
+      #   - run: railway up --service api --environment ${{ github.event.inputs.environment }}
+      #     env:
+      #       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #
+      # SSH / rsync:
+      #   - run: rsync -avz dist/ user@server:/app/
+      # ──────────────────────────────────────────────────
+
+      - name: Deployment placeholder
+        run: |
+          echo "Deploying to ${{ github.event.inputs.environment }}"
+          echo "Add deployment commands to .github/workflows/deploy.yml"
