@@ -9,6 +9,7 @@ COPY packages/types/package.json ./packages/types/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/config/package.json ./packages/config/
 RUN npm install
+COPY tsconfig.base.json ./
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 WORKDIR /app/apps/api
@@ -23,6 +24,7 @@ COPY packages/types/package.json ./packages/types/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/config/package.json ./packages/config/
 RUN npm install
+COPY tsconfig.base.json ./
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 WORKDIR /app/apps/api
