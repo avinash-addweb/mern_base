@@ -1,7 +1,8 @@
 # Database Design — College Discovery & Admission Guidance Platform
 
-> **Version:** 1.0 | **Architecture:** PostgreSQL + MongoDB + Redis  
-> **Last Updated:** March 2026
+> **Version:** 1.1 | **Architecture:** PostgreSQL + MongoDB + Redis  
+> **Last Updated:** March 2026  
+> **Changelog v1.1:** Added `upload_jobs` (Section 16), `saved_universities` (Section 13.3), explicit `news_categories`/`news` tables (Section 8.3-8.4), `publish_scheduled_at` on colleges, `education_level`/`preferred_stream_id` on users, `application_url` on exams.
 
 ---
 
@@ -51,6 +52,8 @@ Core user table for both public (frontend) and admin panel users.
 | `avatar_url` | VARCHAR(500) | YES | NULL | Profile picture URL |
 | `city` | VARCHAR(100) | YES | NULL | User city |
 | `state` | VARCHAR(100) | YES | NULL | User state |
+| `education_level` | VARCHAR(50) | YES | NULL | E.g., `10th`, `12th`, `Graduate`, `Post-Graduate` |
+| `preferred_stream_id` | UUID | YES | NULL | FK → `streams.id` — user's primary interest |
 | `email_verified` | BOOLEAN | NO | `false` | Email verification status |
 | `mobile_verified` | BOOLEAN | NO | `false` | Mobile OTP verification status |
 | `status` | VARCHAR(20) | NO | `'active'` | Enum: `active`, `inactive`, `locked`, `deleted` |
@@ -290,6 +293,7 @@ Core college profile — managed through 9-tab admin form with content workflow.
 | `featured_priority` | INT | YES | NULL | Manual ordering for featured |
 | `status` | VARCHAR(20) | NO | `'draft'` | Workflow: `draft`, `review`, `approved`, `published`, `rejected`, `archived` |
 | `published_at` | TIMESTAMPTZ | YES | NULL | Last publish timestamp |
+| `publish_scheduled_at` | TIMESTAMPTZ | YES | NULL | Scheduled future publish datetime |
 | `assigned_rep_id` | UUID | YES | NULL | FK → `users.id` (College Representative) |
 | `current_version` | INT | NO | `1` | Current version counter |
 | `meta_title` | VARCHAR(70) | YES | NULL | SEO meta title |
@@ -300,7 +304,7 @@ Core college profile — managed through 9-tab admin form with content workflow.
 | `created_at` | TIMESTAMPTZ | NO | `NOW()` | Record creation timestamp |
 | `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last update timestamp |
 
-**Indexes:** `UNIQUE(slug)`, `INDEX(city_id)`, `INDEX(state_id)`, `INDEX(college_type)`, `INDEX(status)`, `INDEX(assigned_rep_id)`, `INDEX(is_featured, featured_priority)`, `INDEX(popularity_score DESC)`, `INDEX(created_at)`, `GIN(meta_keywords)`
+**Indexes:** `UNIQUE(slug)`, `INDEX(city_id)`, `INDEX(state_id)`, `INDEX(college_type)`, `INDEX(status)`, `INDEX(assigned_rep_id)`, `INDEX(is_featured, featured_priority)`, `INDEX(popularity_score DESC)`, `INDEX(created_at)`, `GIN(meta_keywords)`, `INDEX(publish_scheduled_at) WHERE status = 'approved'`
 
 ---
 
@@ -389,6 +393,7 @@ Image gallery (max 20 images per college).
 | `eligibility` | TEXT | YES | NULL | Rich text eligibility |
 | `description` | TEXT | YES | NULL | Rich text overview |
 | `exam_pattern` | TEXT | YES | NULL | Rich text exam pattern |
+| `application_url` | VARCHAR(500) | YES | NULL | Official exam application link |
 | `status` | VARCHAR(20) | NO | `'draft'` | Workflow status |
 | `published_at` | TIMESTAMPTZ | YES | NULL | Last publish timestamp |
 | `current_version` | INT | NO | `1` | Version counter |
@@ -704,15 +709,54 @@ Assignments of attribute values to colleges or courses.
 
 ---
 
-### 8.3 `news_categories` / `news`
+### 8.3 `news_categories`
 
-Structurally identical to `blog_categories` / `blogs` with additions:
-- Separate `news_categories` taxonomy
-- Additional field: `expires_at TIMESTAMPTZ` for auto-archival
+Separate taxonomy from blog categories.
+
+| Column | Type | Null | Default | Description |
+|--------|------|------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `name` | VARCHAR(100) | NO | — | Category name |
+| `slug` | VARCHAR(120) | NO | — | URL slug |
+| `description` | TEXT | YES | NULL | Category description |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Record creation timestamp |
+
+**Indexes:** `UNIQUE(slug)`
 
 ---
 
-### 8.4 `faqs`
+### 8.4 `news`
+
+Structurally identical to `blogs` with additions for auto-archival.
+
+| Column | Type | Null | Default | Description |
+|--------|------|------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `title` | VARCHAR(200) | NO | — | News title |
+| `slug` | VARCHAR(250) | NO | — | SEO-friendly URL slug |
+| `category_id` | UUID | YES | NULL | FK → `news_categories.id` |
+| `author_id` | UUID | NO | — | FK → `users.id` |
+| `featured_image_url` | VARCHAR(500) | YES | NULL | Featured image URL |
+| `featured_image_alt` | VARCHAR(150) | YES | NULL | Image alt text |
+| `excerpt` | VARCHAR(300) | YES | NULL | Short summary |
+| `content` | TEXT | NO | — | Rich text content |
+| `tags` | TEXT[] | YES | NULL | Array of tags |
+| `status` | VARCHAR(20) | NO | `'draft'` | Workflow status |
+| `published_at` | TIMESTAMPTZ | YES | NULL | Publication timestamp |
+| `publish_scheduled_at` | TIMESTAMPTZ | YES | NULL | Scheduled publish datetime |
+| `expires_at` | TIMESTAMPTZ | YES | NULL | Auto-archive date; background job archives when reached |
+| `current_version` | INT | NO | `1` | Version counter |
+| `meta_title` | VARCHAR(70) | YES | NULL | SEO meta title |
+| `meta_description` | VARCHAR(160) | YES | NULL | SEO meta description |
+| `meta_keywords` | TEXT[] | YES | NULL | SEO keywords |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Record creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last update timestamp |
+
+**Indexes:** `UNIQUE(slug)`, `INDEX(category_id)`, `INDEX(author_id)`, `INDEX(status)`, `INDEX(published_at DESC)`, `INDEX(expires_at) WHERE status = 'published'`
+
+---
+
+### 8.5 `faqs`
 
 Centralized FAQ management with tag-based distribution.
 
@@ -733,7 +777,7 @@ Centralized FAQ management with tag-based distribution.
 
 ---
 
-### 8.5 `static_pages`
+### 8.6 `static_pages`
 
 Custom pages: About Us, Privacy Policy, Terms & Conditions, Contact, etc.
 
@@ -753,7 +797,7 @@ Custom pages: About Us, Privacy Policy, Terms & Conditions, Contact, etc.
 
 ---
 
-### 8.6 `author_profiles`
+### 8.7 `author_profiles`
 
 | Column | Type | Null | Default | Description |
 |--------|------|------|---------|-------------|
@@ -935,9 +979,19 @@ Admin-managed SEO content for URL combinations (e.g., `/engineering-colleges-in-
 
 **Primary Key:** `(user_id, course_id)`
 
+### 13.3 `saved_universities`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user_id` | UUID | FK → `users.id` ON DELETE CASCADE |
+| `university_id` | UUID | FK → `universities.id` ON DELETE CASCADE |
+| `created_at` | TIMESTAMPTZ | When saved |
+
+**Primary Key:** `(user_id, university_id)`
+
 ---
 
-### 13.3 `reviews`
+### 13.4 `reviews`
 
 | Column | Type | Null | Default | Description |
 |--------|------|------|---------|-------------|
@@ -955,7 +1009,7 @@ Admin-managed SEO content for URL combinations (e.g., `/engineering-colleges-in-
 
 ---
 
-### 13.4 `notifications`
+### 13.5 `notifications`
 
 In-app notifications (bell icon).
 
@@ -1074,6 +1128,35 @@ Key-value store for all platform configuration.
 | `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last layout change |
 
 **Indexes:** `UNIQUE(user_id)`
+
+---
+
+## 16. Smart Global Upload
+
+### 16.1 `upload_jobs`
+
+Tracks asynchronous bulk import jobs for the Smart Global Upload module.
+
+| Column | Type | Null | Default | Description |
+|--------|------|------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `entity_type` | VARCHAR(30) | NO | — | Enum: `college`, `course`, `exam`, `stream`, `location` |
+| `file_name` | VARCHAR(300) | NO | — | Original uploaded filename |
+| `file_url` | VARCHAR(500) | NO | — | Stored file URL (S3/CDN) |
+| `file_size` | INT | NO | — | File size in bytes |
+| `mode` | VARCHAR(20) | NO | `'insert'` | Enum: `insert`, `upsert` |
+| `status` | VARCHAR(20) | NO | `'queued'` | Enum: `queued`, `processing`, `completed`, `failed` |
+| `total_rows` | INT | YES | NULL | Total rows detected in file |
+| `processed_rows` | INT | NO | `0` | Rows processed so far |
+| `success_count` | INT | NO | `0` | Successfully imported rows |
+| `error_count` | INT | NO | `0` | Rows with errors (skipped) |
+| `error_report` | JSONB | YES | NULL | Array of `{ row, field, message }` error details |
+| `started_at` | TIMESTAMPTZ | YES | NULL | Processing start time |
+| `completed_at` | TIMESTAMPTZ | YES | NULL | Processing completion time |
+| `uploaded_by` | UUID | NO | — | FK → `users.id` |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Upload timestamp |
+
+**Indexes:** `INDEX(entity_type, status)`, `INDEX(uploaded_by)`, `INDEX(created_at DESC)`
 
 ---
 
